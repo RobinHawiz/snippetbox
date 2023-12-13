@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
+	"text/template"
 ) 
 
 type snippet struct {
@@ -15,7 +17,20 @@ func home (w http.ResponseWriter, r *http.Request){
 		http.NotFound(w, r)
 		return
 	}
-	w.Write([]byte("Hello World"))
+	files := []string{
+		"./ui/html/base.tmpl",
+		"./ui/html/pages/home.tmpl",
+	}
+	if tmpl, err := template.ParseFiles(files...); err != nil {
+		log.Println(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}else{
+		if err = tmpl.ExecuteTemplate(w, "base", nil); err != nil{
+			log.Println(err.Error())
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
+	}
+	
 }
 
 func snippetViewHandler (w http.ResponseWriter, r *http.Request){
