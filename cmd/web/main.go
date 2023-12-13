@@ -7,6 +7,11 @@ import (
 	"os"
 )
 
+//This application struct will hold the application-wide dependencies for the web application.
+type application struct {
+	logger *slog.Logger
+}
+
 func main(){
 	//Defines a new command-line flag.
 	addr := flag.String("addr", ":4000", "HTTP network address")
@@ -18,13 +23,17 @@ func main(){
 		Level: slog.LevelDebug,
 		AddSource: true,
 	}))
+	//Initialize application
+	app := &application{
+		logger: logger,
+	}
 	//Golang has a http.DefaultServeMux BUT for the sake of clarity, maintainablility and security, it's generally a good idea to create your own.
 	mux := http.NewServeMux()
 	fileserver := http.FileServer(http.Dir("./ui/static/"))
 	mux.Handle("/static/", http.StripPrefix("/static", fileserver))
-	mux.HandleFunc("/", home)
-	mux.HandleFunc("/snippet/view", snippetViewHandler)
-	mux.HandleFunc("/snippet/create", snippetCreateHandler)
+	mux.HandleFunc("/", app.home)
+	mux.HandleFunc("/snippet/view", app.snippetViewHandler)
+	mux.HandleFunc("/snippet/create", app.snippetCreateHandler)
 
 	logger.Info("Starting server", slog.String("addr", *addr))
 

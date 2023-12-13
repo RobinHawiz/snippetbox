@@ -2,17 +2,13 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"text/template"
-) 
+)
 
-type snippet struct {
-	content string
-}
-
-func home (w http.ResponseWriter, r *http.Request){
+func (a *application) home (w http.ResponseWriter, r *http.Request){
 	if r.URL.Path != "/"{
 		http.NotFound(w, r)
 		return
@@ -23,18 +19,18 @@ func home (w http.ResponseWriter, r *http.Request){
 		"./ui/html/partials/nav.tmpl",
 	}
 	if tmpl, err := template.ParseFiles(files...); err != nil {
-		log.Println(err.Error())
+		a.logger.Error(err.Error(), slog.String("method", r.Method), slog.String("uri", r.URL.RequestURI()))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}else{
 		if err = tmpl.ExecuteTemplate(w, "base", nil); err != nil{
-			log.Println(err.Error())
+			a.logger.Error(err.Error(), slog.String("method", r.Method), slog.String("uri", r.URL.RequestURI()))
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		}
 	}
 	
 }
 
-func snippetViewHandler (w http.ResponseWriter, r *http.Request){
+func (a *application) snippetViewHandler (w http.ResponseWriter, r *http.Request){
 	if id, err := strconv.Atoi(r.URL.Query().Get("id")); err != nil || id < 1 {
 		http.NotFound(w, r)
 		return
@@ -43,7 +39,7 @@ func snippetViewHandler (w http.ResponseWriter, r *http.Request){
 	}
 }
 
-func snippetCreateHandler (w http.ResponseWriter, r *http.Request){
+func (a *application) snippetCreateHandler (w http.ResponseWriter, r *http.Request){
 	if(r.Method != http.MethodPost){
 		w.Header().Set("Allow", http.MethodPost)
 		//Calls the w.WriteHeader() and w.Write() methods for us. Pretty neat.
