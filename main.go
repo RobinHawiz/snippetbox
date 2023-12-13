@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 ) 
 
 type snippet struct {
@@ -18,7 +20,12 @@ func home (w http.ResponseWriter, r *http.Request){
 }
 
 func snippetViewHandler (w http.ResponseWriter, r *http.Request){
-	w.Write([]byte("Display a specific snippet..."))
+	if id, err := strconv.Atoi(r.URL.Query().Get("id")); err != nil || id < 1 {
+		http.NotFound(w, r)
+		return
+	}else{
+		fmt.Fprintf(w, "Display a specific snippet with ID %d...", id)
+	}
 }
 
 func snippetCreateHandler (w http.ResponseWriter, r *http.Request){
