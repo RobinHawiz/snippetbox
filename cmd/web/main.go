@@ -2,8 +2,9 @@ package main
 
 import (
 	"flag"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 )
 
 func main(){
@@ -12,6 +13,11 @@ func main(){
 	//This parses the command-line flag, which in turn makes it possible to read in the command-line flag value and assigns it to the addr variable.
 	//Ex: go run . -addr=":9999"
 	flag.Parse()
+	//A structured logger that writes to the standard out stream and uses customized settings.
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+		AddSource: true,
+	}))
 	//Golang has a http.DefaultServeMux BUT for the sake of clarity, maintainablility and security, it's generally a good idea to create your own.
 	mux := http.NewServeMux()
 	fileserver := http.FileServer(http.Dir("./ui/static/"))
@@ -19,9 +25,11 @@ func main(){
 	mux.HandleFunc("/", home)
 	mux.HandleFunc("/snippet/view", snippetViewHandler)
 	mux.HandleFunc("/snippet/create", snippetCreateHandler)
-	log.Printf("Starting server on %s", *addr)
+
+	logger.Info("Starting server", slog.String("addr", *addr))
 
 	err := http.ListenAndServe(*addr, mux)
-	log.Fatal(err)
+	logger.Error(err.Error())
+	os.Exit(1)
 	
 }
