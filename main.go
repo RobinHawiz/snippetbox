@@ -22,10 +22,10 @@ func snippetViewHandler (w http.ResponseWriter, r *http.Request){
 }
 
 func snippetCreateHandler (w http.ResponseWriter, r *http.Request){
-	if(r.Method != "POST"){
-		w.Header().Set("Allow", "POST")
+	if(r.Method != http.MethodPost){
+		w.Header().Set("Allow", http.MethodPost)
 		//Calls the w.WriteHeader() and w.Write() methods for us. Pretty neat.
-		http.Error(w, "Method Not Allowed", 405)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	w.Write([]byte("Creat a new snippet..."))
