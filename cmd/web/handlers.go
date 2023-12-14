@@ -22,9 +22,19 @@ func (a *application) home (w http.ResponseWriter, r *http.Request){
 	}
 	if tmpl, err := template.ParseFiles(files...); err != nil {
 		a.serverError(w,r,err)
+		return
 	}else{
 		if err = tmpl.ExecuteTemplate(w, "base", nil); err != nil{
 			a.serverError(w,r,err)
+			return
+		}
+	}
+	if snippets, err := a.snippets.Latest(); err != nil{
+		a.serverError(w,r,err)
+		return
+	}else{
+		for _, snippet := range snippets {
+			fmt.Fprintf(w, "%+v", snippet)
 		}
 	}
 	
