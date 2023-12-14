@@ -16,6 +16,6 @@ go mod verify
 
 go run ./cmd/web
 
-### To list available command-line flags, use the -help flag:
+### To list available command-line flags:
 
-go run ./cmd/web -flag
+go run ./cmd/web -help
