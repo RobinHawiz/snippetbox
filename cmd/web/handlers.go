@@ -1,10 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"text/template"
+
+	"github.com/robinhawiz/snippetbox/internal/models"
 )
 
 func (a *application) home (w http.ResponseWriter, r *http.Request){
@@ -32,7 +35,17 @@ func (a *application) snippetViewHandler (w http.ResponseWriter, r *http.Request
 		a.notFound(w)
 		return
 	}else{
-		fmt.Fprintf(w, "Display a specific snippet with ID %d...", id)
+		if snippet, err := a.snippets.Get(id); err != nil{
+			if errors.Is(err, models.ErrNoRecord){
+				a.notFound(w)
+			}else{
+				a.serverError(w,r,err)
+			}
+			return
+		}else{
+		// fmt.Fprintf(w, "Your snippet:\nID:%d\nTitle:\n%s\nContent:\n%s\nCreated:\n%s\nExpires:\n%s\n", snippet.ID, snippet.Title, snippet.Content, snippet.Created, snippet.Expires)
+		fmt.Fprintf(w, "%+v", snippet)
+		}
 	}
 }
 
@@ -42,6 +55,11 @@ func (a *application) snippetCreateHandler (w http.ResponseWriter, r *http.Reque
 		a.clientError(w,http.StatusMethodNotAllowed)
 		return
 	}
-	w.Write([]byte("Creat a new snippet..."))
-	
+	id, err := a.snippets.Insert("Snails: 101", "Snails move surprisingly slowly. But while snails may not be the fastest creatures, their steady pace shows that sometimes perseverance is more important than speed.", 1)
+	if err != nil {
+		a.serverError(w,r,err)
+		return
+	}
+
+	http.Redirect(w,r,fmt.Sprintf("/snippet/view?id=%d", id), http.StatusSeeOther)
 }
