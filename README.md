@@ -4,7 +4,15 @@ A web application which lets people paste and share snippets of text. A bit like
 
 ## Commands
 
-### To run the server, run the following command from the root folder:
+### To download dependencies:
+
+go mod download
+
+### To verify dependencies:
+
+go mod verify
+
+### To run the server:
 
 go run ./cmd/web
 
