@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 //This application struct will hold the application-wide dependencies for the web application.
