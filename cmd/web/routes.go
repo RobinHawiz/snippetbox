@@ -7,9 +7,9 @@ func (a *application) routes() *http.ServeMux{
 		mux := http.NewServeMux()
 		fileserver := http.FileServer(http.Dir("./ui/static/"))
 		mux.Handle("/static/", http.StripPrefix("/static", fileserver))
-		mux.HandleFunc("/", app.home)
-		mux.HandleFunc("/snippet/view", app.snippetViewHandler)
-		mux.HandleFunc("/snippet/create", app.snippetCreateHandler)
+		mux.HandleFunc("/", a.home)
+		mux.HandleFunc("/snippet/view", a.snippetViewHandler)
+		mux.HandleFunc("/snippet/create", a.snippetCreateHandler)
 		return mux
 }
 	
