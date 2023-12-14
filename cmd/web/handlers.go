@@ -41,21 +41,33 @@ func (a *application) home (w http.ResponseWriter, r *http.Request){
 }
 
 func (a *application) snippetViewHandler (w http.ResponseWriter, r *http.Request){
-	if id, err := strconv.Atoi(r.URL.Query().Get("id")); err != nil || id < 1 {
+	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	if err != nil || id < 1 {
 		a.notFound(w)
 		return
-	}else{
-		if snippet, err := a.snippets.Get(id); err != nil{
-			if errors.Is(err, models.ErrNoRecord){
-				a.notFound(w)
-			}else{
-				a.serverError(w,r,err)
-			}
-			return
+	}
+	snippet, err := a.snippets.Get(id)
+	if err != nil{
+		if errors.Is(err, models.ErrNoRecord){
+			a.notFound(w)
 		}else{
-		// fmt.Fprintf(w, "Your snippet:\nID:%d\nTitle:\n%s\nContent:\n%s\nCreated:\n%s\nExpires:\n%s\n", snippet.ID, snippet.Title, snippet.Content, snippet.Created, snippet.Expires)
-		fmt.Fprintf(w, "%+v", snippet)
+			a.serverError(w,r,err)
 		}
+			return
+		}
+	files := []string{
+		"./ui/html/base.tmpl",
+		"./ui/html/partials/nav.tmpl",
+		"./ui/html/pages/view.tmpl",
+		
+	}
+	ts, err := template.ParseFiles(files...)
+		if err != nil{
+			a.serverError(w,r,err)
+		}
+	if err = ts.ExecuteTemplate(w, "base", snippet); err != nil{
+		a.serverError(w,r,err)
+		return
 	}
 }
 
