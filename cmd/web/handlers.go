@@ -24,20 +24,18 @@ func (a *application) home (w http.ResponseWriter, r *http.Request){
 		a.serverError(w,r,err)
 		return
 	}else{
-		if err = tmpl.ExecuteTemplate(w, "base", nil); err != nil{
+		snippets, err := a.snippets.Latest()
+		if err != nil {
+			a.serverError(w,r,err)
+		}
+		data := templateData{
+			Snippets: snippets,
+		}
+		if err = tmpl.ExecuteTemplate(w, "base", data); err != nil{
 			a.serverError(w,r,err)
 			return
 		}
 	}
-	if snippets, err := a.snippets.Latest(); err != nil{
-		a.serverError(w,r,err)
-		return
-	}else{
-		for _, snippet := range snippets {
-			fmt.Fprintf(w, "%+v", snippet)
-		}
-	}
-	
 }
 
 func (a *application) snippetViewHandler (w http.ResponseWriter, r *http.Request){
@@ -59,13 +57,15 @@ func (a *application) snippetViewHandler (w http.ResponseWriter, r *http.Request
 		"./ui/html/base.tmpl",
 		"./ui/html/partials/nav.tmpl",
 		"./ui/html/pages/view.tmpl",
-		
 	}
 	ts, err := template.ParseFiles(files...)
 		if err != nil{
 			a.serverError(w,r,err)
 		}
-	if err = ts.ExecuteTemplate(w, "base", snippet); err != nil{
+	data := templateData{
+		Snippet: snippet,
+	}
+	if err = ts.ExecuteTemplate(w, "base", data); err != nil{
 		a.serverError(w,r,err)
 		return
 	}
