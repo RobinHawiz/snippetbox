@@ -10,6 +10,6 @@ func (a *application) routes() http.Handler{
 		mux.HandleFunc("/", a.home)
 		mux.HandleFunc("/snippet/view", a.snippetViewHandler)
 		mux.HandleFunc("/snippet/create", a.snippetCreateHandler)
-		return a.logRequest(secureHeaders(mux))
+		return a.recoverPanic(a.logRequest(secureHeaders(mux)))
 }
 	
