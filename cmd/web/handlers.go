@@ -5,40 +5,26 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"text/template"
 
 	"github.com/robinhawiz/snippetbox/internal/models"
 )
 
-func (a *application) home (w http.ResponseWriter, r *http.Request){
+func (a *application) home(w http.ResponseWriter, r *http.Request){
 	if r.URL.Path != "/"{
 		a.notFound(w)
-		return
-	}
-	files := []string{
-		"./ui/html/base.tmpl",
-		"./ui/html/pages/home.tmpl",
-		"./ui/html/partials/nav.tmpl",
-	}
-	if tmpl, err := template.ParseFiles(files...); err != nil {
-		a.serverError(w,r,err)
 		return
 	}else{
 		snippets, err := a.snippets.Latest()
 		if err != nil {
 			a.serverError(w,r,err)
 		}
-		data := templateData{
+		a.render(w,r,http.StatusOK,"home.tmpl",templateData{
 			Snippets: snippets,
-		}
-		if err = tmpl.ExecuteTemplate(w, "base", data); err != nil{
-			a.serverError(w,r,err)
-			return
-		}
+		})
 	}
 }
 
-func (a *application) snippetViewHandler (w http.ResponseWriter, r *http.Request){
+func (a *application) snippetViewHandler(w http.ResponseWriter, r *http.Request){
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil || id < 1 {
 		a.notFound(w)
@@ -53,25 +39,12 @@ func (a *application) snippetViewHandler (w http.ResponseWriter, r *http.Request
 		}
 			return
 		}
-	files := []string{
-		"./ui/html/base.tmpl",
-		"./ui/html/partials/nav.tmpl",
-		"./ui/html/pages/view.tmpl",
-	}
-	ts, err := template.ParseFiles(files...)
-		if err != nil{
-			a.serverError(w,r,err)
-		}
-	data := templateData{
+	a.render(w,r,http.StatusOK,"view.tmpl",templateData{
 		Snippet: snippet,
-	}
-	if err = ts.ExecuteTemplate(w, "base", data); err != nil{
-		a.serverError(w,r,err)
-		return
-	}
+	})
 }
 
-func (a *application) snippetCreateHandler (w http.ResponseWriter, r *http.Request){
+func (a *application) snippetCreateHandler(w http.ResponseWriter, r *http.Request){
 	if(r.Method != http.MethodPost){
 		w.Header().Set("Allow", http.MethodPost)
 		a.clientError(w,http.StatusMethodNotAllowed)
