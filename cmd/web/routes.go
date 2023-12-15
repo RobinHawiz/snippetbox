@@ -2,7 +2,7 @@ package main
 
 import "net/http"
 
-func (a *application) routes() *http.ServeMux{
+func (a *application) routes() http.Handler{
 		//Golang has a http.DefaultServeMux BUT for the sake of clarity, maintainablility and security, it's generally a good idea to create your own.
 		mux := http.NewServeMux()
 		fileserver := http.FileServer(http.Dir("./ui/static/"))
@@ -10,6 +10,6 @@ func (a *application) routes() *http.ServeMux{
 		mux.HandleFunc("/", a.home)
 		mux.HandleFunc("/snippet/view", a.snippetViewHandler)
 		mux.HandleFunc("/snippet/create", a.snippetCreateHandler)
-		return mux
+		return secureHeaders(mux)
 }
 	
