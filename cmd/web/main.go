@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"os"
@@ -16,6 +17,7 @@ import (
 type application struct {
 	logger *slog.Logger
 	snippets *models.SnippetModel
+	templateCache map[string]*template.Template
 }
 
 func main(){
@@ -36,12 +38,19 @@ func main(){
 	}
 
 	defer db.Close()
+
+	cache, err := newTemplateCache()
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
 	//Initialize application
 	app := &application{
 		logger: logger,
 		snippets: &models.SnippetModel{
 			DB: db,
 		},
+		templateCache: cache,
 	}
 
 	logger.Info("Starting server", slog.String("addr", *addr))
