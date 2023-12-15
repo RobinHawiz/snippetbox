@@ -1,14 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
 	"net/http"
-	"runtime/debug"
 )
 
 func (a *application) serverError(w http.ResponseWriter, r *http.Request, err error){
-	a.logger.Error(err.Error(), slog.String("method", r.Method), slog.String("uri", r.URL.RequestURI()), slog.String("trace", string(debug.Stack())))
+	a.logger.Error(err.Error(), slog.String("method", r.Method), slog.String("uri", r.URL.RequestURI()))
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
 
@@ -27,8 +27,11 @@ func (a *application) render(w http.ResponseWriter, r *http.Request, status int,
 		a.serverError(w,r,err)
 		return
 	}
-	w.WriteHeader(status)
-	if err := ts.ExecuteTemplate(w, "base", data); err != nil{
+	buf := new(bytes.Buffer)
+	if err := ts.ExecuteTemplate(buf, "base", data); err != nil{
 		a.serverError(w,r,err)
+		return
 	}
+	w.WriteHeader(status)
+	buf.WriteTo(w)
 }
