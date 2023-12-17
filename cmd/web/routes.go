@@ -1,6 +1,10 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/justinas/alice"
+)
 
 func (a *application) routes() http.Handler{
 		//Golang has a http.DefaultServeMux BUT for the sake of clarity, maintainablility and security, it's generally a good idea to create your own.
@@ -10,6 +14,9 @@ func (a *application) routes() http.Handler{
 		mux.HandleFunc("/", a.home)
 		mux.HandleFunc("/snippet/view", a.snippetViewHandler)
 		mux.HandleFunc("/snippet/create", a.snippetCreateHandler)
-		return a.recoverPanic(a.logRequest(secureHeaders(mux)))
+
+		//Creating a middleware chain containing our "standard" middleware which will be used for every request our application recieves.
+		standard := alice.New(a.recoverPanic, a.logRequest, secureHeaders)
+		return standard.Then(mux)
 }
 	
