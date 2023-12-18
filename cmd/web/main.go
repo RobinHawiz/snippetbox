@@ -10,14 +10,16 @@ import (
 
 	"github.com/robinhawiz/snippetbox/internal/models"
 
+	"github.com/go-playground/form/v4"
 	_ "github.com/go-sql-driver/mysql"
 )
 
 //This application struct will hold the application-wide dependencies for the web application.
 type application struct {
-	logger *slog.Logger
-	snippets *models.SnippetModel
+	logger 		  *slog.Logger
+	snippets 	  *models.SnippetModel
 	templateCache map[string]*template.Template
+	formDecoder   *form.Decoder
 }
 
 func main(){
@@ -44,13 +46,16 @@ func main(){
 		logger.Error(err.Error())
 		os.Exit(1)
 	}
+
+	//Initialize a decoder instance.
+	formDecoder := form.NewDecoder()
+
 	//Initialize application
 	app := &application{
 		logger: logger,
-		snippets: &models.SnippetModel{
-			DB: db,
-		},
+		snippets: &models.SnippetModel{DB: db,},
 		templateCache: cache,
+		formDecoder: formDecoder,
 	}
 
 	logger.Info("Starting server", slog.String("addr", *addr))

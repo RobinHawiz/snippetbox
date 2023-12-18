@@ -60,34 +60,22 @@ func (a *application) snippetCreateHandler(w http.ResponseWriter, r *http.Reques
 
 //Represents the form data and validation erros for the form fields.
 //We export the struct fields in order to be read by the html/template package when rendering the template.
+//At the end of the field I've included struct tags which tells the decoder how to map HTML form values into the different struct fields.
 type snippetCreateForm struct {
-	Title 		string
-	Content 	string
-	Expires 	int
-	validator.Validator
+	Title 				string `form:"title"`
+	Content 			string `form:"content"`
+	Expires 			int	`form:"expires"`
+	validator.Validator `form:"-"`
 }
 
 func (a *application) snippetCreatePostHandler(w http.ResponseWriter, r *http.Request){
 
-	//Add any data in POST request bodies to the r.PostForm map.
-	err := r.ParseForm()
+	var form snippetCreateForm
+
+	err := a.decodePostForm(r, &form)
 	if err != nil{
 		a.clientError(w, http.StatusBadRequest)
 		return
-	}
-
-	//We are expecting our expires value to be a number, and want to represent it in our Go code as an integer.
-	expires, err := strconv.Atoi((r.PostForm.Get("expires")))
-	if err != nil{
-		a.clientError(w, http.StatusBadRequest)
-		return
-	}
-
-	//Create an instance of the snippetCreateForm struct containing the values from the form.
-	form := snippetCreateForm{
-		Title: r.PostForm.Get("title"),
-		Content: r.PostForm.Get("content"),
-		Expires: expires,
 	}
 
 	//CheckField() will add the provided key and error message to the FieldErrors map if the check does not evaluate to true.
