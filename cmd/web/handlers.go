@@ -55,7 +55,24 @@ func (a *application) snippetCreateHandler(w http.ResponseWriter, r *http.Reques
 
 func (a *application) snippetCreatePostHandler(w http.ResponseWriter, r *http.Request){
 
-	id, err := a.snippets.Insert("Snails: 101", "Snails move surprisingly slowly. But while snails may not be the fastest creatures, their steady pace shows that sometimes perseverance is more important than speed.", 1)
+	//Add any data in POST request bodies to the r.PostForm map.
+	err := r.ParseForm()
+	if err != nil{
+		a.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	//Get input values from the r.PostForm map.
+	title := r.PostForm.Get("title")
+	content := r.PostForm.Get("content")
+	//We are expecting our expires value to be a number, and want to represent it in our Go code as an integer.
+	expires, err := strconv.Atoi((r.PostForm.Get("expires")))
+	if err != nil{
+		a.clientError(w, http.StatusBadRequest)
+		return
+	}
+	//Insert snippet with the form values into the db.
+	id, err := a.snippets.Insert(title, content, expires)
 	if err != nil {
 		a.serverError(w,r,err)
 		return
