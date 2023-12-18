@@ -49,7 +49,8 @@ func (a *application) snippetViewHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (a *application) snippetCreateHandler(w http.ResponseWriter, r *http.Request){
-	w.Write([]byte("Display the form for creating a new snippet..."))
+	data := a.newTemplateData(r)
+	a.render(w,r,http.StatusOK,"create.tmpl",data)
 }
 
 func (a *application) snippetCreatePostHandler(w http.ResponseWriter, r *http.Request){
