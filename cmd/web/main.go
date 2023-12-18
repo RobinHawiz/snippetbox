@@ -7,19 +7,23 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/robinhawiz/snippetbox/internal/models"
 
+	"github.com/alexedwards/scs/mysqlstore"
+	"github.com/alexedwards/scs/v2"
 	"github.com/go-playground/form/v4"
 	_ "github.com/go-sql-driver/mysql"
 )
 
 //This application struct will hold the application-wide dependencies for the web application.
 type application struct {
-	logger 		  *slog.Logger
-	snippets 	  *models.SnippetModel
-	templateCache map[string]*template.Template
-	formDecoder   *form.Decoder
+	logger 		   *slog.Logger
+	snippets 	   *models.SnippetModel
+	templateCache  map[string]*template.Template
+	formDecoder    *form.Decoder
+	sessionManager *scs.SessionManager
 }
 
 func main(){
@@ -50,12 +54,18 @@ func main(){
 	//Initialize a decoder instance.
 	formDecoder := form.NewDecoder()
 
+	//Initialize a new session manager. Then we configure it to use our MySQL database as the session store, and set a lifetime of 12h.
+	sessionManager := scs.New()
+	sessionManager.Store = mysqlstore.New(db)
+	sessionManager.Lifetime = 12 * time.Hour
+
 	//Initialize application
 	app := &application{
 		logger: logger,
 		snippets: &models.SnippetModel{DB: db,},
 		templateCache: cache,
 		formDecoder: formDecoder,
+		sessionManager: sessionManager,
 	}
 
 	logger.Info("Starting server", slog.String("addr", *addr))
