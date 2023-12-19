@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"database/sql"
 	"flag"
 	"html/template"
@@ -67,12 +68,33 @@ func main(){
 		sessionManager: sessionManager,
 	}
 
+	//Initialize tls.Config struct to hold non-default TLS settings thath we want the server to use.
+	tlsConfig := &tls.Config{
+		//We restrict the elliptic curves that can potentially be used during the TLS handshake.
+		CurvePreferences: []tls.CurveID{tls.X25519},
+		//We only want to support cipher suites which use ECDHE and not support weaker suites that use RC4, 3DES, CBC.
+		//Note that if a TLS 1.3 connection is negotiated, any CipherSuites field will be ignored (The suites Go supports for TLS 1.3 connections are considered to be safe).
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			},
+	}
 
+	//Initialize server
 	srv := &http.Server{
 		Addr: *addr,
 		Handler: app.routes(),
 		//Create a *log.Logger from our structured logger handler, which writes log entries at Error level, and assign it to the ErrorLog field.
 		ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
+		TLSConfig: tlsConfig,
+		//Add idle, Read and Write timeouts to the server.
+		IdleTimeout: time.Minute,
+		ReadTimeout: 5 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
 
 	logger.Info("Starting server", slog.String("addr", srv.Addr))
