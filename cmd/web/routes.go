@@ -27,6 +27,12 @@ func (a *application) routes() http.Handler{
 		router.Handler("GET", "/snippet/view/:id", dynamic.ThenFunc(a.snippetViewHandler))
 		router.Handler("GET", "/snippet/create", dynamic.ThenFunc(a.snippetCreateHandler))
 		router.Handler("POST", "/snippet/create", dynamic.ThenFunc(a.snippetCreatePostHandler))
+		//Signup & Login & Logout
+		router.Handler("GET", "/user/signup", dynamic.ThenFunc(a.userSignup))
+		router.Handler("POST", "/user/signup", dynamic.ThenFunc(a.userSignupPost))
+		router.Handler("GET", "/user/login", dynamic.ThenFunc(a.userLogin))
+		router.Handler("POST", "/user/login", dynamic.ThenFunc(a.userLoginPost))
+		router.Handler("POST", "/user/logout", dynamic.ThenFunc(a.userLogoutPost))
 
 		//Creating a middleware chain containing our "standard" middleware which will be used for every request our application recieves.
 		standard := alice.New(a.recoverPanic, a.logRequest, secureHeaders)
