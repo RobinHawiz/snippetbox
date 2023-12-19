@@ -10,14 +10,22 @@ import (
 //Sanity check the format of an email address. This returns a pointer to a "compiled" regexp.Regexp type, or panics in the event of an error.
 var EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
-//Contains (or will contain) a map of validation error messages for our form fields.
+
 type Validator struct {
-	FieldErrors map[string]string
+	//Holds any validation errors which are not related to a specific form field.
+	NonFieldErrors []string
+	//Holds a map of any validation error messages for our form fields.
+	FieldErrors    map[string]string
 }
 
 //Returns true it the FieldErrors map doens't contain any entries.
 func (v *Validator) Valid() bool {
-	return len(v.FieldErrors) == 0
+	return len(v.FieldErrors) == 0 && len(v.NonFieldErrors) == 0
+}
+
+//Adds an error message to the NonFieldErrors slice.
+func (v *Validator) AddNonFieldError(message string) {
+	v.NonFieldErrors = append(v.NonFieldErrors, message)
 }
 
 //Adds an error message to the FieldErrors map (so long as no entry already exists for the given key).

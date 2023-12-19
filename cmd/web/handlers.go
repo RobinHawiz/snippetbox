@@ -168,12 +168,68 @@ func (a *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 }
 
+type userLoginForm struct {
+	Email 				string `form:"email"`
+	Password			string `form:"password"`
+	validator.Validator `form:"-"`
+}
+
 func (a *application) userLogin(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Display an HTML form for logging in a user...")
+	data := a.newTemplateData(r)
+	data.Form = userLoginForm{}
+	a.render(w,r,http.StatusUnprocessableEntity, "login.tmpl", data)
 }
 
 func (a *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Authenticate and login the user...")
+	//Decode the form data into the userLoginForm struct
+	var form userLoginForm
+
+	err := a.decodePostForm(r, &form)
+	if err != nil {
+		a.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	//CheckField() will add the provided key and error message to the FieldErrors map if the check does not evaluate to true.
+	form.CheckField(validator.NotBlank(form.Email), "email", "This field cannot be blank")
+	form.CheckField(validator.Matches(form.Email, validator.EmailRX), "email", "This field must be a valid email address")
+	form.CheckField(validator.NotBlank(form.Password), "password", "This field cannot be blank")
+
+	//Check if any of the above checks failed. If they did, re-display the login.tmpl template, passing in the userLoginForm instance as dynamic data in the Form field.
+	if !form.Valid() {
+		data := a.newTemplateData(r)
+		data.Form = form
+		a.render(w,r,http.StatusUnprocessableEntity, "login.tmpl", data)
+		return
+	}
+
+	id, err := a.users.Authenticate(form.Email, form.Password)
+	if err != nil {
+		if errors.Is(err, models.ErrInvalidCredentials) {
+			form.AddNonFieldError("Email or password is incorrect")
+
+			data := a.newTemplateData(r)
+			data.Form = form
+			a.render(w,r,http.StatusUnprocessableEntity, "login.tmpl", data)
+		} else {
+			a.serverError(w, r, err)
+		}
+		return
+	}
+
+	//Changes the current session ID.
+	//It's considered good practice to generate a new session ID when the authentication state or privilige levels change for the user (e.g. login and logout operations).
+	err = a.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+
+	//Add the ID of the current user to the session, so that they are now "logged in".
+	a.sessionManager.Put(r.Context(), "authenticatedUserID", id)
+
+	//Redirect the user to the create snippet page.
+	http.Redirect(w, r, "/snippet/create", http.StatusSeeOther)
 }
 
 func (a *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
