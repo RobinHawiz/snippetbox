@@ -68,6 +68,7 @@ type snippetCreateForm struct {
 	validator.Validator `form:"-"`
 }
 
+
 func (a *application) snippetCreatePostHandler(w http.ResponseWriter, r *http.Request){
 
 	var form snippetCreateForm
@@ -105,22 +106,76 @@ func (a *application) snippetCreatePostHandler(w http.ResponseWriter, r *http.Re
 	http.Redirect(w,r,fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
 
-func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Display an HTML form for signing up a new user...")
+type userSignupForm struct {
+	Name 				string `form:"name"`
+	Email 				string `form:"email"`
+	Password			string `form:"password"`
+	validator.Validator `form:"-"`
 }
 
-func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Create a new user...")
+func (a *application) userSignup(w http.ResponseWriter, r *http.Request) {
+	data := a.newTemplateData(r)
+	//Set any initial display values for the form.
+	data.Form = userSignupForm{}
+	a.render(w,r,http.StatusOK,"signup.tmpl",data)
 }
 
-func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
+func (a *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
+	var form userSignupForm
+
+	//Parse the form data into the userSignupForm struct.
+	err := a.decodePostForm(r, &form)
+	if err != nil {
+		a.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	//CheckField() will add the provided key and error message to the FieldErrors map if the check does not evaluate to true.
+	form.CheckField(validator.NotBlank(form.Name), "name", "This field cannot be blank")
+	form.CheckField(validator.NotBlank(form.Email), "email", "This field cannot be blank")
+	form.CheckField(validator.Matches(form.Email, validator.EmailRX), "email", "This field must be a valid email address")
+	form.CheckField(validator.NotBlank(form.Password), "password", "This field cannot be blank")
+	form.CheckField(validator.MinChars(form.Password, 8), "password", "This field must be at least 8 characters long")
+
+	//Check if any of the above checks failed. If they did, re-display the signup.tmpl template, passing in the userSignupForm instance as dynamic data in the Form field.
+	if !form.Valid() {
+		data := a.newTemplateData(r)
+		data.Form = form
+		a.render(w,r,http.StatusUnprocessableEntity, "signup.tmpl", data)
+		return
+	}
+
+	//Tries to create a new user record in the database. If the email already exists then add an error message to the form and re-display it.
+	err = a.users.Insert(form.Name, form.Email, form.Password)
+	if err != nil {
+		if errors.Is(err, models.ErrDuplicateEmail) {
+			form.AddFieldError("email", "Email is already in use")
+
+			data := a.newTemplateData(r)
+			data.Form = form
+			a.render(w,r,http.StatusUnprocessableEntity, "signup.tmpl", data)
+		}else {
+			a.serverError(w, r, err)
+		}
+
+		return
+	}
+
+	//If creating a user was successfull, add a confirmation flash message to the session confirming that their signup worked.
+	a.sessionManager.Put(r.Context(), "flash", "Your signup was successfull. Please log in.")
+
+	//And redirect the user to the login page.
+	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+}
+
+func (a *application) userLogin(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Display an HTML form for logging in a user...")
 }
 
-func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
+func (a *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Authenticate and login the user...")
 }
 
-func (app *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
+func (a *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Logout the user...")
 }
