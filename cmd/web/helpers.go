@@ -43,6 +43,9 @@ func (a *application) render(w http.ResponseWriter, r *http.Request, status int,
 func (a *application) newTemplateData(r *http.Request) templateData{
 	return templateData{
 		CurrentYear: time.Now().Year(),
+		//If there's a string key "flash" with a value, we'll retrieve it and delete it from the session data.
+		//It there's no matching key in the session data then this will return an empty string.
+		Flash: a.sessionManager.PopString(r.Context(), "flash"),
 	}
 }
 

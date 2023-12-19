@@ -23,7 +23,7 @@ func (a *application) home(w http.ResponseWriter, r *http.Request){
 
 func (a *application) snippetViewHandler(w http.ResponseWriter, r *http.Request){
 	//httprouter when parsing a request puts any named parameters in the request context.
-	//in this instance params becomes a slice with a key (id) and a corresponding value.
+	//in this instance params becomes a slice with a key (id) and a corresponding value (taken from the URL).
 	params := httprouter.ParamsFromContext(r.Context())
 
 	//We use the ByName() method to get the value of the "id" named parameter from the slice and valitdate it.
@@ -41,7 +41,7 @@ func (a *application) snippetViewHandler(w http.ResponseWriter, r *http.Request)
 			a.serverError(w,r,err)
 		}
 			return
-		}
+	}
 
 	data := a.newTemplateData(r)
 	data.Snippet = snippet
@@ -98,6 +98,9 @@ func (a *application) snippetCreatePostHandler(w http.ResponseWriter, r *http.Re
 		a.serverError(w,r,err)
 		return
 	}
+
+	//We add a string key ("flash") and a corresponding value to the session data.
+	a.sessionManager.Put(r.Context(), "flash", "Snippet successfully created!")
 
 	http.Redirect(w,r,fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
