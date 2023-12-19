@@ -30,13 +30,10 @@ func main(){
 	//Defines a new command-line flag.
 	addr := flag.String("addr", ":4000", "HTTP network address")
 	dsn := flag.String("dsn", "web:pass@/snippetbox?parseTime=true", "MySQL data source name")
-	//This parses the command-line flag, which in turn makes it possible to read in the command-line flag value and assigns it to the addr variable.
+	//This parses the command-line flags, which in turn makes it possible to read in the command-line flag values and assigns it to the addr and dsn variables.
 	flag.Parse()
-	//A structured logger that writes to the standard out stream and uses customized settings.
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-		AddSource: true,
-	}))
+	//A structured logger that writes to the standard out stream.
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	db, err := openDB(*dsn)
 	if err != nil {
 		logger.Error(err.Error())
@@ -68,9 +65,17 @@ func main(){
 		sessionManager: sessionManager,
 	}
 
-	logger.Info("Starting server", slog.String("addr", *addr))
 
-	err = http.ListenAndServe(*addr, app.routes())
+	srv := &http.Server{
+		Addr: *addr,
+		Handler: app.routes(),
+		//Create a *log.Logger from our structured logger handler, which writes log entries at Error level, and assign it to the ErrorLog field.
+		ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
+	}
+
+	logger.Info("Starting server", slog.String("addr", srv.Addr))
+
+	err = srv.ListenAndServe()
 	logger.Error(err.Error())
 	os.Exit(1)
 	
