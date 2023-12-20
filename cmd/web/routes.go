@@ -19,20 +19,23 @@ func (a *application) routes() http.Handler{
 		fileserver := http.FileServer(http.Dir("./ui/static/"))
 		router.Handler("GET", "/static/*filepath", http.StripPrefix("/static", fileserver))
 
-		//Creating a middleware chain containing the middleware specific to our dynamic application routes.
+		//Unprotected application routes using the "dynamic" middleware chain.
 		dynamic := alice.New(a.sessionManager.LoadAndSave)
-
-		//Routing
+		
 		router.Handler("GET", "/", dynamic.ThenFunc(a.home))
 		router.Handler("GET", "/snippet/view/:id", dynamic.ThenFunc(a.snippetViewHandler))
-		router.Handler("GET", "/snippet/create", dynamic.ThenFunc(a.snippetCreateHandler))
-		router.Handler("POST", "/snippet/create", dynamic.ThenFunc(a.snippetCreatePostHandler))
-		//Signup & Login & Logout
 		router.Handler("GET", "/user/signup", dynamic.ThenFunc(a.userSignup))
 		router.Handler("POST", "/user/signup", dynamic.ThenFunc(a.userSignupPost))
 		router.Handler("GET", "/user/login", dynamic.ThenFunc(a.userLogin))
 		router.Handler("POST", "/user/login", dynamic.ThenFunc(a.userLoginPost))
-		router.Handler("POST", "/user/logout", dynamic.ThenFunc(a.userLogoutPost))
+
+
+		//Protected (authenticated-only) application routes, using a new "protected" middleware chain which includes the requireAuthentication middleware.
+		protected := dynamic.Append(a.requireAuthentication)
+
+		router.Handler("GET", "/snippet/create", protected.ThenFunc(a.snippetCreateHandler))
+		router.Handler("POST", "/snippet/create", protected.ThenFunc(a.snippetCreatePostHandler))
+		router.Handler("POST", "/user/logout", protected.ThenFunc(a.userLogoutPost))
 
 		//Creating a middleware chain containing our "standard" middleware which will be used for every request our application recieves.
 		standard := alice.New(a.recoverPanic, a.logRequest, secureHeaders)

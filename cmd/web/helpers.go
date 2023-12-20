@@ -46,6 +46,8 @@ func (a *application) newTemplateData(r *http.Request) templateData{
 		//If there's a string key "flash" with a value, we'll retrieve it and delete it from the session data.
 		//It there's no matching key in the session data then this will return an empty string.
 		Flash: a.sessionManager.PopString(r.Context(), "flash"),
+		//Adds the authentication status to the template data.
+		IsAuthenticated: a.isAuthenticated(r),
 	}
 }
 
@@ -71,4 +73,8 @@ func (a *application) decodePostForm(r *http.Request, dst any) error{
 		return err
 	}
 	return nil
+}
+
+func (a *application) isAuthenticated(r *http.Request) bool {
+	return a.sessionManager.Exists(r.Context(), "authenticatedUserID")
 }
