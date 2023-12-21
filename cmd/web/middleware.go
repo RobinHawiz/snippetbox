@@ -78,20 +78,21 @@ func (a *application) authenticate(next http.Handler) http.Handler {
 		id := a.sessionManager.GetInt(r.Context(), "authenticatedUserID")
 		if id == 0 {
 			next.ServeHTTP(w,r)
+			return
 		}
 
 		//Otherwise, we check to see it a user with that ID exists in our database.
 		exists, err := a.users.Exists(id)
 		if err != nil {
 			a.serverError(w,r,err)
+			return
 		}
 
 		//If a matching user is found, we know that the request is coming from an authenticated user who exists in our dabatase.
 		if exists {
 			//We create a copy of the request with a key and true value stored in the request context. We then pass this copy to the next handler in the chain.
 			ctx := context.WithValue(r.Context(), isAuthenticatedContextKey, true)
-			r := r.WithContext(ctx)
-			next.ServeHTTP(w,r)
+			r = r.WithContext(ctx)
 		}
 		next.ServeHTTP(w,r)
 	})
